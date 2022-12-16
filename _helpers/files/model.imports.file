@@ -1,0 +1,6 @@
+const pMidd = require('../../utils/payloadMiddleware')
+const path = require('path')
+const Validator = require('jsonschema').Validator
+let v = new Validator()
+v = require('../../utils/crtMiddSchema').crtValSchemas(path.join(__dirname, 'schema'), v)
+

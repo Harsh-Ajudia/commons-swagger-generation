@@ -1,0 +1,18 @@
+_CONTROLLER_COMMENTS_
+module.exports._FUNCTION_NAME = async (req, res, next) => {
+    const serviceTime = new Date().getTime()
+    try {
+        const payload = {
+            requestId: req.requestId,
+            query: req.query,
+            body: req.body,
+            params: req.params
+        }
+        req.response = await _SERVICE_NAME._FUNCTION_NAME(payload)
+        req.serviceTime = (new Date().getTime() - serviceTime) / 1000
+        next()
+    } catch (error) {
+        req.serviceTime = (new Date().getTime() - serviceTime) / 1000
+        next(error)
+    }
+}

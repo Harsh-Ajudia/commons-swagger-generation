@@ -1,0 +1,11 @@
+{
+  "name": "commons-swagger-generation",
+  "version": "1.0.0",
+  "description": "swagger routes to file generation: controller, router, service, model, repository",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Harsh.Ajudia",
+  "license": "ISC"
+}

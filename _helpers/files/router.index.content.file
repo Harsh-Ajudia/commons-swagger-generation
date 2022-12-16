@@ -1,0 +1,2 @@
+const _ROUTER_NAME = require('./_CONTROLLER_NAME')
+router.use('/', _ROUTER_NAME)

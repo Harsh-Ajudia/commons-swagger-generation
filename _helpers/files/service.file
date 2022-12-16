@@ -1,0 +1,13 @@
+module.exports._FUNCTION_NAME = async (payload) => {
+
+    const colors = ['Black', 'White', 'Red']
+
+    _event.emit('steplogging', { requestId: payload.requestId, step: 2, message: "Colors fetched successfully" })
+
+    return {
+        message: 'Colors fetched successfully',
+        data: {
+            colors
+        }
+    }
+}

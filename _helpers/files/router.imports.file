@@ -1,0 +1,5 @@
+const express = require('express')
+const router = express.Router()
+const _SCHEMA_NAME = require('../_MODEL_FOLDER_NAME/_FUNCTION_NAME')
+const _SERVICE_NAME = require('../_CONTROLLER_FOLDER_NAME/_FUNCTION_NAME')
+//const emp_role = require('../modules/authentication/emp_role')
