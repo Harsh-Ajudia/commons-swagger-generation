@@ -173,6 +173,8 @@ const writeFiles = async (_functionName, _controller, _method, route, metaData) 
             }
 
             let _writeType = "Skipped"
+            const exportsLine = "\nmodule.exports = router"
+
             if (fileStats.size > 0) {
                 // Append
                 const existingData = fs.readFileSync(__FILE, 'utf-8')
@@ -200,8 +202,13 @@ const writeFiles = async (_functionName, _controller, _method, route, metaData) 
                         fs.appendFileSync(__FILE, data)
                         _writeType = "Append"
                     } else if (fileType == 'router' && !existingData.includes(`router.${_method}('${getRouterPath(route)}'`)) {
-                        const data = "\n" + rawData
-                        fs.appendFileSync(__FILE, data)
+                        const exportPos = existingData.indexOf(exportsLine)
+                        let oldData = existingData.substring(exportPos)
+                        let file = fs.openSync(__FILE, 'r+')
+                        const seperator = rawData.length ? "\n\n" : "\n"
+                        let bufferedText = new Buffer.from(rawData + seperator + oldData.replace(/^\n|\n$/g, ""))
+                        fs.writeSync(file, bufferedText, 0, bufferedText.length, exportPos)
+                        fs.closeSync(file)
                         _writeType = "Append"
                     }
                     else {
@@ -225,7 +232,7 @@ const writeFiles = async (_functionName, _controller, _method, route, metaData) 
                         data = modelString + data
                         break;
                     case "router":
-                        data = routerString + "\n\n" + data
+                        data = routerString + "\n\n" + data + "\n" + exportsLine
                         break;
                     default:
                         break;

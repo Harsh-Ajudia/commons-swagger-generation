@@ -198,8 +198,8 @@ module.exports.writeRouter = async (apis, basePath, currentDir) => {
             fs.closeSync(fs.openSync(_indexFile, 'a'))
         }
         let fileStats = fs.statSync(_indexFile)
-        const existinData = fs.readFileSync(_indexFile, 'utf-8')
-        const exportPos = existinData.indexOf(exportsLine)
+        const existingData = fs.readFileSync(_indexFile, 'utf-8')
+        const exportPos = existingData.indexOf(exportsLine)
 
         const _routerImports = fs.readFileSync(path.resolve(currentDir, '_helpers', 'files', 'router.index.imports.file'), 'utf-8')
         const _routerContent = fs.readFileSync(path.resolve(currentDir, '_helpers', 'files', 'router.index.content.file'), 'utf-8')
@@ -207,10 +207,10 @@ module.exports.writeRouter = async (apis, basePath, currentDir) => {
         let rawData = ""
         for await (const controller of Object.keys(controllers)) {
             let str = _routerContent.replace(/_ROUTER_NAME/g, controller + "Router").replace(/_CONTROLLER_NAME/g, controller)
-            const search = str.split('require')[0]
+            const search = str.split('require')[0].trim()
 
-            if (!existinData.includes(search)) {
-                this.addConsole('appending router content as it is not there', 2)
+            if (!existingData.includes(search)) {
+                this.addConsole('Appending router content as it is not there', 2)
                 rawData += "\n\n" + str
             } else {
                 this.addConsole(`Skipping router of: ${controller}`, 2)
@@ -218,15 +218,16 @@ module.exports.writeRouter = async (apis, basePath, currentDir) => {
         }
         if (fileStats.size > 0) {
             // append
-            let oldData = existinData.substring(exportPos)
-            var file = fs.openSync(_indexFile, 'r+')
-            var bufferedText = new Buffer.from(rawData + "\n" + oldData)
+            let oldData = existingData.substring(exportPos)
+            let file = fs.openSync(_indexFile, 'r+')
+            const seperator = rawData.length ? "\n\n" : "\n"
+            let bufferedText = new Buffer.from(rawData + seperator + oldData.replace(/^\n|\n$/g, ""))
             fs.writeSync(file, bufferedText, 0, bufferedText.length, exportPos)
             fs.closeSync(file)
 
         } else {
             // new & overwrite
-            fs.writeFileSync(_indexFile, _routerImports + rawData + "\n\n" + exportsLine)
+            fs.writeFileSync(_indexFile, _routerImports + rawData + "\n" + exportsLine)
         }
 
 
