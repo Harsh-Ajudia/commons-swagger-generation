@@ -1,0 +1,54 @@
+const fileGeneration = require('commons-swagger-generation')
+
+const constants = {
+    logLevel: 1,
+    methodMapper: {
+        get: 'query',
+        post: 'body'
+    },
+    fileTypes: {
+        'router': {
+            folder: '_routers',
+            template: 'router.file',
+            fileName: '.js'
+        },
+        'controller': {
+            folder: '_controllers',
+            template: 'controller.file',
+            fileName: '.js'
+        },
+        'service': {
+            folder: '_services',
+            template: 'service.file',
+            fileName: '.js'
+        },
+        'repository': {
+            folder: '_repositories',
+            template: 'repositories.file',
+            fileName: '.js'
+        },
+        'model': {
+            folder: '_model',
+            template: 'model.file',
+            fileName: '.js'
+        },
+        'schema': {
+            folder: '_model',
+            template: 'schema.file',
+            fileName: '.json'
+        }
+    },
+    maxRotations: 3
+}
+
+fileGeneration.generateControllers(constants)
+
+/**
+ * @@ logLevel:         supported options: 1 or 2. 1 will give basic and 2 will give detailed logs
+ * 
+ * @@ methodMapper:     It is used to map schema files whether to validate query or validate body against UI payload
+ * 
+ * @@ fileTypes:        The filename, template name, folder name that code generator writes comes from this variable
+ * 
+ * @@ maxRotations:     It is used to specify the max rounds for getting the unique possibility of function name inside controller
+ */
