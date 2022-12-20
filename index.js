@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const { _throwError, camelCase, ensureFolders, isValidJson, rewriteControllers, hyphenCase, addConsole, getRouterPath, getStrFromLength, writeRouter, updateConfig } = require('./_helpers/commons.utils')
+const { _throwError, camelCase, ensureFolders, isValidJson, rewriteControllers, hyphenCase, addConsole, getRouterPath, writeRouter, updateConfig, deReferenceSchema, updateDefinitions } = require('./_helpers/commons.utils')
 
 let basePath = null
 let currentDir = null
@@ -9,6 +9,7 @@ let fileTypes = null
 let methodMapper = null
 let logLevel = null
 
+let definitions = {}
 module.exports.generateControllers = async (config = null) => {
     const startTime = new Date().getTime()
     fileTypes = config.fileTypes
@@ -43,6 +44,8 @@ const readSwagger = async () => {
             if (forceRewrite) {
                 swagger = await rewriteControllers(swagger)
             }
+            definitions = swagger.definitions
+            updateDefinitions(definitions)
             const totalApis = Object.keys(swagger.paths).length
             let currentProgress = 0
 
@@ -56,13 +59,15 @@ const readSwagger = async () => {
 
                 if (logLevel <= 1) {
                     let percent = (currentProgress / totalApis * 100).toFixed(0)
-                    process.stdout.write(`Processing apis: ${currentProgress}/${totalApis} -- ${percent}%`)
-                    process.stdout.cursorTo(0)
+                    process.stdout.write(`Processing apis: ${currentProgress}/${totalApis} -- ${percent}%`) // _refresh
+                    process.stdout.cursorTo(0)// _refresh
                 }
             }
 
             await writeRouter(apis, basePath, currentDir)
-            process.stdout.write("\n\n")
+
+            process.stdout.write("\n\n") // _refresh
+
             if (logLevel > 1) {
                 console.table(apis.sort((a, b) => {
                     return a.folder.localeCompare(b.folder)
@@ -88,7 +93,6 @@ const convertApi = async (route, routeDetails) => {
 
             _controller = camelCase(_controller)
             let _functionName = hyphenCase(routeDetails[_method].functionName)
-
             const writeRes = await writeFiles(_functionName, _controller, _method, route, routeDetails[_method])
             apis = apis.concat(writeRes)
         }
@@ -179,12 +183,15 @@ const writeFiles = async (_functionName, _controller, _method, route, metaData) 
                 // Append
                 const existingData = fs.readFileSync(__FILE, 'utf-8')
                 if (fileType == 'schema' && isValidJson(rawData) && isValidJson(existingData)) {
+                    const deSchema = await deReferenceSchema(route, _method, metaData)
                     let _jsonSchema = JSON.parse(existingData)
                     let _rawData = JSON.parse(rawData)
 
                     const checkExist = _jsonSchema.find(validation => {
                         return validation.id == _rawData[0].id
                     })
+                    _rawData[0].properties = deSchema.properties
+                    _rawData[0].required = deSchema.required
                     if (!checkExist) {
                         _jsonSchema = _jsonSchema.concat(_rawData)
                         const jsonToWrite = JSON.stringify(_jsonSchema, null, 4)
@@ -233,6 +240,15 @@ const writeFiles = async (_functionName, _controller, _method, route, metaData) 
                         break;
                     case "router":
                         data = routerString + "\n\n" + data + "\n" + exportsLine
+                        break;
+                    case "schema":
+                        const deSchema = await deReferenceSchema(route, _method, metaData)
+                        let _rawData = JSON.parse(rawData)
+
+                        _rawData[0].properties = deSchema.properties
+                        _rawData[0].required = deSchema.required
+                        
+                        data = JSON.stringify(_rawData, null, 4)
                         break;
                     default:
                         break;

@@ -5,6 +5,7 @@ let fileTypes = null
 let methodMapper = null
 let logLevel = null
 let maxRotations = null
+let definitions = null
 
 module.exports.updateConfig = (config) => {
     fileTypes = config.fileTypes
@@ -238,4 +239,108 @@ module.exports.writeRouter = async (apis, basePath, currentDir) => {
 
 module.exports.getStrFromLength = (number) => {
     return `[${"".padStart(number, "=")}]`
+}
+
+module.exports.updateDefinitions = (defs) => {
+    definitions = defs
+}
+
+module.exports.deReferenceSchema = async (route, method, details) => {
+    try {
+        // console.log(details.parameters)
+        let schema = {
+            properties: {},
+            required: [],
+        }
+        if (details.parameters && details.parameters.length) {
+            for await (const prop of details.parameters) {
+                if (prop.in && prop.name) {
+                    // console.log('prop', prop)
+                    switch (prop.in) {
+                        case "query":
+                            schema['properties'][prop.name] = {
+                                required: prop.required ? true : false,
+                                type: prop.schema && prop.schema.type ? prop.schema.type : "string",
+                            }
+                            break;
+                        case "path":
+                            schema['properties'][prop.name] = {
+                                required: prop.required ? true : false,
+                                type: prop.schema && prop.schema.type ? prop.schema.type : "string",
+                            }
+                            break;
+                        case "body":
+                            if (prop.schema && prop.schema["$ref"]) {
+                                const reference = getDefinition(prop.schema["$ref"])
+                                const child = await generatePostSchema(reference)
+                                schema = child
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+        return schema
+    } catch (error) {
+        console.log('SCHEMA DEREFERENCE ERROR', error)
+    }
+}
+const generatePostSchema = async (schema) => {
+    try {
+        let builder = {}
+        if (schema && schema['type'] && ['object', 'array'].includes(schema['type'])) {
+
+            const iterable = schema['type'] == 'array' ? schema.items.properties : schema.properties
+            for await (const prop of Object.keys(iterable)) {
+                if (iterable[prop]["$ref"]) {
+                    const childRef = getDefinition(iterable[prop]["$ref"])
+                    const childSchema = await generatePostSchema(childRef)
+                    builder[prop] = {
+                        type: schema['type'],
+                        ...childSchema
+                    }
+                } else if (['object', 'array'].includes(iterable[prop]['type'])) {
+                    const childSchema = await generatePostSchema(iterable[prop])
+                    builder[prop] = {
+                        type: schema['type'],
+                        ...childSchema
+                    }
+                }
+                else {
+                    builder[prop] = {
+                        ...iterable[prop]
+                    }
+                }
+            }
+        }
+        const buildedSchema = {
+            properties: builder,
+        }
+        if (schema && schema.required) {
+            buildedSchema.required = schema.required
+        } else if (schema && schema.required) {
+            buildedSchema.required = schema.required
+        }
+        return buildedSchema
+    } catch (error) {
+        console.log('GENERATING POST SCHEMA', error)
+    }
+}
+const getDefinition = (path) => {
+    try {
+        const frags = path.split("/")
+        let definitionInstance = definitions
+        frags.forEach(element => {
+            if (!["#", "definitions"].includes(element)) {
+                definitionInstance = definitionInstance[element]
+            }
+        })
+        return definitionInstance
+
+    } catch (error) {
+        console.log('GETTING DEF ERROR REFERENCE', error)
+    }
 }

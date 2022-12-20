@@ -38,10 +38,10 @@ Assuming you have generate.js file at the root of your project.
 ```
 
 ## Step 2. Calling the method
-Also Create another file called **generate.js** at the root as mentioned above
+Also Create another file called **[generate.js](https://github.com/Harsh-Ajudia/commons-swagger-generation/blob/main/examples/generate.js)** at the root as mentioned above
 
 *Note:* You can call the method anywhere. This is just a showcase of how you can invoke this method
-Refer the sample file here [generate.js](/examples/generate.js) for details.
+Refer the sample file here [generate.js](https://github.com/Harsh-Ajudia/commons-swagger-generation/blob/main/examples/generate.js) for details.
 
 ```javascript
 const fileGeneration = require('commons-swagger-generation')
