@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const { _throwError, camelCase, ensureFolders, isValidJson, rewriteControllers, hyphenCase, addConsole, getRouterPath, writeRouter, updateConfig, deReferenceSchema, updateDefinitions } = require('./_helpers/commons.utils')
-
+const { takeBackup } = require('./_helpers/backup')
 let basePath = null
 let currentDir = null
 
@@ -11,12 +11,17 @@ let logLevel = null
 
 let definitions = {}
 module.exports.generateControllers = async (config = null) => {
+    basePath = process.cwd()
+    updateConfig(config)
+
+    if (config.backupFiles.enable) {
+        await takeBackup(basePath, config)
+    }
     const startTime = new Date().getTime()
     fileTypes = config.fileTypes
     logLevel = config.logLevel
     methodMapper = config.methodMapper
 
-    updateConfig(config)
     basePath = process.cwd()
     currentDir = __dirname
     const folders = [
@@ -146,6 +151,13 @@ const writeFiles = async (_functionName, _controller, _method, route, metaData) 
                     break;
                 case "service":
                     rawData = rawData.replace(/_FUNCTION_NAME/g, _functionName)
+                    if (metaData && metaData.responses && metaData.responses['200']) {
+                        let resp = {
+                            message: metaData.responses['200'].description || "Data fetched successfully"
+                        }
+                        rawData = rawData.replace(/__RESPONSE_200/g, JSON.stringify(resp))
+
+                    }
                     break;
                 case "repository":
                     rawData = rawData.replace(/_FUNCTION_NAME/g, _functionName)
@@ -247,7 +259,7 @@ const writeFiles = async (_functionName, _controller, _method, route, metaData) 
 
                         _rawData[0].properties = deSchema.properties
                         _rawData[0].required = deSchema.required
-                        
+
                         data = JSON.stringify(_rawData, null, 4)
                         break;
                     default:

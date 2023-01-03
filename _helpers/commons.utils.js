@@ -258,16 +258,16 @@ module.exports.deReferenceSchema = async (route, method, details) => {
                     // console.log('prop', prop)
                     switch (prop.in) {
                         case "query":
-                            schema['properties'][prop.name] = {
-                                required: prop.required ? true : false,
-                                type: prop.schema && prop.schema.type ? prop.schema.type : "string",
-                            }
+                            let childQuery = await generatePostSchema(prop)
+                            delete childQuery.description
+                            delete childQuery.example
+                            schema['properties'][prop.name] = childQuery
                             break;
                         case "path":
-                            schema['properties'][prop.name] = {
-                                required: prop.required ? true : false,
-                                type: prop.schema && prop.schema.type ? prop.schema.type : "string",
-                            }
+                            let childPath = await generatePostSchema(prop)
+                            delete childPath.description
+                            delete childPath.example
+                            schema['properties'][prop.name] = childPath
                             break;
                         case "body":
                             if (prop.schema && prop.schema["$ref"]) {
@@ -293,7 +293,20 @@ const generatePostSchema = async (schema) => {
         let builder = {}
         if (schema && schema['type'] && ['object', 'array'].includes(schema['type'])) {
 
-            const iterable = schema['type'] == 'array' ? schema.items.properties : schema.properties
+            let iterable = {}
+            if (schema['type'] == 'array') {
+                iterable = schema.items && schema.items.properties ? schema.items.properties : {}
+                if (Object.keys(iterable).length === 0 && schema.items && schema.items["$ref"]) {
+                    // assuming it might have ref
+                    iterable = getDefinition(schema.items["$ref"])
+                    iterable = iterable.properties ? iterable.properties : iterable
+                } else if (Object.keys(iterable).length === 0 && schema.items) {
+                    return schema.items
+                }
+            } else if (schema['type'] == 'object') {
+                iterable = schema.properties ? schema.properties : {}
+            }
+
             for await (const prop of Object.keys(iterable)) {
                 if (iterable[prop]["$ref"]) {
                     const childRef = getDefinition(iterable[prop]["$ref"])
@@ -304,9 +317,16 @@ const generatePostSchema = async (schema) => {
                     }
                 } else if (['object', 'array'].includes(iterable[prop]['type'])) {
                     const childSchema = await generatePostSchema(iterable[prop])
+                    // type: iterable[prop]['type'],
                     builder[prop] = {
-                        type: schema['type'],
+                        ...iterable[prop],
                         ...childSchema
+                    }
+                    if (iterable[prop]['type'] == 'array') {
+                        builder[prop] = {
+                            ...iterable[prop],
+                            items: childSchema
+                        }
                     }
                 }
                 else {
@@ -314,14 +334,16 @@ const generatePostSchema = async (schema) => {
                         ...iterable[prop]
                     }
                 }
+                delete builder[prop].description
+                delete builder[prop].example
             }
+
+
         }
-        const buildedSchema = {
+        const buildedSchema = Object.keys(builder).length === 0 ? schema : {
             properties: builder,
         }
         if (schema && schema.required) {
-            buildedSchema.required = schema.required
-        } else if (schema && schema.required) {
             buildedSchema.required = schema.required
         }
         return buildedSchema

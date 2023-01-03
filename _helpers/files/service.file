@@ -4,10 +4,5 @@ module.exports._FUNCTION_NAME = async (payload) => {
 
     _event.emit('steplogging', { requestId: payload.requestId, step: 2, message: "Colors fetched successfully" })
 
-    return {
-        message: 'Colors fetched successfully',
-        data: {
-            colors
-        }
-    }
+    return __RESPONSE_200
 }
