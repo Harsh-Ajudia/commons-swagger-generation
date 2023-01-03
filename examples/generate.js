@@ -41,7 +41,7 @@ const options = {
     maxRotations: 3,
     backupFiles: {
         enable: false,
-        serviceName: "FMS_NJ_NODE_Template"
+        serviceName: "node_template"
     }
 }
 

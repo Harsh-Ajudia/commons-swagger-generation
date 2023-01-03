@@ -1,6 +1,6 @@
 {
   "name": "commons-swagger-generation",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "swagger routes to file generation: controller, router, service, model, repository",
   "main": "index.js",
   "scripts": {
